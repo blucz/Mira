@@ -1,6 +1,6 @@
 # Mira
 
-A dead-simple image viewer / slideshow app. Built using electron in an evening. 
+A dead-simple image viewer / slideshow app. Built using Electron and Vue3 in an evening. 
 
 I've been a long time user of HexCat's ViewIt. After the company shut down, it became impossible to get new license keys for the software, and it doesn't work properly on arm64 macs either.
 
