@@ -1,7 +1,8 @@
-import { app, BrowserWindow, shell, ipcMain, protocol, globalShortcut } from 'electron'
+import { app, BrowserWindow, shell, ipcMain, protocol, globalShortcut, shell } from 'electron'
 import { release } from 'node:os'
 import { join } from 'node:path'
 import path from 'path'
+import fs from 'fs'
 import { fileURLToPath } from 'url'
 
 // The built directory structure
@@ -115,6 +116,15 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+ipcMain.handle('delete-image', (_,arg: { path: string } ) => {
+    const path = arg.path;
+    try {
+        fs.unlinkSync(path);
+    } catch (err) {
+      console.error(err);
+    }
+});
 
 // New window example arg: new windows url
 ipcMain.handle('open-win', (_, arg) => {

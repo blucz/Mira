@@ -2,6 +2,7 @@
 import { ref, Ref } from 'vue';
 import { supportedExtensions, findFilesWithExtensions, shuffleArray } from './utils';
 import { Image } from './image';
+import { ipcRenderer } from 'electron';
 
 const dropIcon : Ref<HTMLElement | null> = ref(null);
 
@@ -104,6 +105,15 @@ function removeAll() {
   imagePaths.clear();
 }
 
+function deleteCurrent() {
+  console.log("deleteCurrent()");
+  if (image) {
+    imagePaths.delete(image.value!.path);
+    images.splice(index.value, 1)
+    ipcRenderer.invoke('delete-image', { 'path': image.value!.path });
+  }
+}
+
 const handleKey = (event: any) => {
   console.log(`on keydown keycode=${event.keyCode}`);
   if (event.keyCode === 37) { // Left arrow - Previous Image
@@ -126,6 +136,8 @@ const handleKey = (event: any) => {
     removeCurrent();
   } else if (event.keyCode == 67) { // 'c', remove all images
     removeAll();
+  } else if (event.keyCode == 68) { // 'd', delete file 
+    deleteCurrent();
   }
   update();
 };
