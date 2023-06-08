@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export const supportedExtensions = [ '.jpg', '.png', '.gif', '.mp4' ];
+export const supportedExtensions = [ '.jpg', '.png', '.gif'/*, '.mp4' */];
 
 export function findFilesWithExtensions(pathsOrDirs: string | string[], extensions: string[], fileList: string[] = []): string[] {
   if (!Array.isArray(pathsOrDirs)) {
