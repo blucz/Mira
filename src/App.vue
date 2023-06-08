@@ -17,7 +17,7 @@ const index               : Ref<number>            = ref(-1);
 const count               : Ref<number>            = ref(-1);
 const image               : Ref<Image | undefined> = ref(undefined);
 const isSlideshow         : Ref<boolean>           = ref(false);
-const slideshowDurationMs : Ref<number>            = ref(5000);
+const slideshowDurationMs : Ref<number>            = ref(10000);
 
 
 type IntervalId = ReturnType<typeof setInterval>;
@@ -39,15 +39,17 @@ function addImageFiles(paths: string[]): void {
   }
   const newCount = images.length;
   if (newCount > oldCount) {
-    index.value = oldCount+1;
+    index.value = oldCount;
   }
   update();
 }
 
 function toggleSlideshow() {
+console.log("toggleslideshow")
   if (slideshowIntervalTimer) {
     clearInterval(slideshowIntervalTimer);
     slideshowIntervalTimer = undefined;
+    isSlideshow.value = false;
   } else {
     slideshowIntervalTimer = setInterval(function() {
       const oldValue = index.value;
@@ -59,8 +61,9 @@ function toggleSlideshow() {
         toggleSlideshow();
       }
     }, slideshowDurationMs.value);
+    isSlideshow.value = true;
   }
-    update();
+  update();
 }
 
 function resetSlideshow() {
@@ -99,6 +102,10 @@ function removeCurrent() {
   }
 }
 
+function openFileUsingSystemViewer() {
+    ipcRenderer.invoke('open-file', { 'path': image.value!.path });
+}
+
 function removeAll() {
   console.log("removeAll()");
   images.length = 0;
@@ -116,13 +123,13 @@ function deleteCurrent() {
 
 const handleKey = (event: any) => {
   console.log(`on keydown keycode=${event.keyCode}`);
-  if (event.keyCode === 37) { // Left arrow - Previous Image
+  if (event.keyCode === 37 || event.keyCode == 65) {        // Left arrow / 'a' - Previous Image
     prevImage();
-  } else if (event.keyCode === 39) { // Right arrow - Next Image
+  } else if (event.keyCode === 39 || event.keyCode == 68) { // Right arrow / 'd' - Next Image
     nextImage();
-  } else if (event.keyCode === 38) { // Up arrow - Increase Slideshow Duration
+  } else if (event.keyCode === 38 || event.keyCode == 87) { // Up arrow / 'w' - Increase Slideshow Duration
     increaseSlideshowDuration();
-  } else if (event.keyCode === 40) { // Down arrow - Decreas Slideshow Duration
+  } else if (event.keyCode === 40 || event.keyCode == 73) { // Down arrow / 's' - Decreas Slideshow Duration
     decreaseSlideshowDuration();
   } else if (event.keyCode == 82) { // 'r' - Randomize
     shuffleArray(images);
@@ -133,10 +140,12 @@ const handleKey = (event: any) => {
   } else if (event.keyCode == 35) { // End, go to last image
     goToLast();
   } else if (event.keyCode == 88) { // 'x', remove current image
-    removeCurrent();
+    removeCurrent()
   } else if (event.keyCode == 67) { // 'c', remove all images
     removeAll();
-  } else if (event.keyCode == 68) { // 'd', delete file 
+  } else if (event.keyCode == 79) { // 'o', open file using system viewer
+    openFileUsingSystemViewer();
+  } else if (event.keyCode == 68 && event.shiftKey) { // 'D', delete file 
     deleteCurrent();
   }
   update();
@@ -169,7 +178,9 @@ window.addEventListener('keydown', handleKey);
         {{index+1}} / {{count}} 
       </div>
       <div style='text-align:right'>
-        {{slideshowDurationMs/1000}}s
+        <span v-if='isSlideshow'>
+          {{slideshowDurationMs/1000}}s
+        </span>
       </div>
     </div>
   </div>

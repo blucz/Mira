@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, ipcMain, protocol, globalShortcut, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell, ipcMain, protocol, globalShortcut, shell } from 'electron'
 import { release } from 'node:os'
 import { join } from 'node:path'
 import path from 'path'
@@ -45,7 +45,7 @@ const indexHtml = join(process.env.DIST, 'index.html')
 
 async function createWindow() {
   win = new BrowserWindow({
-    title: 'Main window',
+    title: 'Mira',
     icon: join(process.env.PUBLIC, 'favicon.ico'),
     webPreferences: {
       preload,
@@ -84,11 +84,45 @@ app.whenReady().then(async () => {
     const filePath = fileURLToPath('file://' + request.url.slice('atom://'.length))
     callback(filePath)
   });
+
+  // Create the menu template
+  const menuTemplate = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New',
+          accelerator: process.platform === 'darwin' ? 'Cmd+N' : 'Ctrl+N',
+          click: createWindow,
+        },
+        {
+          label: 'Close',
+          accelerator: process.platform === 'darwin' ? 'Cmd+W' : 'Ctrl+W',
+          role: 'close',
+        },
+        // Add other menu items as needed
+      ],
+    },
+  ];
+  const menu = Menu.buildFromTemplate(menuTemplate);
+  Menu.setApplicationMenu(menu);
+
   // Register the "command+f" keyboard shortcut to toggle fullscreen mode
   globalShortcut.register('CommandOrControl+F', () => {
     win.setFullScreen(!win.isFullScreen());
   });
 });
+
+function openFile(filePath: string) {
+  // Open file using the system's default viewer
+  shell.openPath(filePath)
+    .then(() => {
+      console.log('File opened successfully');
+    })
+    .catch((error) => {
+      console.error('Error opening file:', error);
+    });
+}
 
 app.on('window-all-closed', () => {
   globalShortcut.unregister('CommandOrControl+F');
@@ -116,6 +150,11 @@ app.on('activate', () => {
     createWindow()
   }
 })
+
+ipcMain.handle('open-file', (_,arg: { path: string } ) => {
+  const path = arg.path;
+  openFile(path);
+});
 
 ipcMain.handle('delete-image', (_,arg: { path: string } ) => {
     const path = arg.path;

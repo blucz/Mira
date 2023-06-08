@@ -10,15 +10,18 @@ This was developed in 2023 with a healthy dose of ChatGPT and Github CoPilot. Th
 
 ## Keyboard commands:
 
-- Left: view previous image
-- Right: view next image
-- Up: Increase slideshow interval
-- Down: Decrease slideshow interval
-- Home: go to first imagre
+- Left / a: view previous image
+- Right / d: view next image
+- Up / w: Increase slideshow interval
+- Down / s: Decrease slideshow interval
+- Home: go to first image
 - End: go to last image
 - x: remove current image from the list
+- D: delete current image from disk
 - c: remove all images from the list
 - r: randomize order of images
+- q: quit
+- o: open using system viewer
 - spacebar: start/stop slideshow
 
 

@@ -1,1 +1,137 @@
-"use strict";const e=require("electron"),d=require("node:os"),r=require("node:path"),w=require("fs"),u=require("url");process.env.DIST_ELECTRON=r.join(__dirname,"..");process.env.DIST=r.join(process.env.DIST_ELECTRON,"../dist");process.env.PUBLIC=process.env.VITE_DEV_SERVER_URL?r.join(process.env.DIST_ELECTRON,"../public"):process.env.DIST;d.release().startsWith("6.1")&&e.app.disableHardwareAcceleration();process.platform==="win32"&&e.app.setAppUserModelId(e.app.getName());e.app.requestSingleInstanceLock()||(e.app.quit(),process.exit(0));let n=null;const i=r.join(__dirname,"../preload/index.js"),l=process.env.VITE_DEV_SERVER_URL,a=r.join(process.env.DIST,"index.html");async function c(){n=new e.BrowserWindow({title:"Main window",icon:r.join(process.env.PUBLIC,"favicon.ico"),webPreferences:{preload:i,nodeIntegration:!0,contextIsolation:!1}}),process.env.VITE_DEV_SERVER_URL?(n.loadURL(l),n.webContents.openDevTools()):n.loadFile(a),n.webContents.on("did-finish-load",()=>{n==null||n.webContents.send("main-process-message",new Date().toLocaleString())}),n.webContents.setWindowOpenHandler(({url:o})=>(o.startsWith("https:")&&e.shell.openExternal(o),{action:"deny"}))}e.app.whenReady().then(async()=>{await c(),e.protocol.registerFileProtocol("atom",(o,s)=>{const t=u.fileURLToPath("file://"+o.url.slice(7));s(t)}),e.globalShortcut.register("CommandOrControl+F",()=>{n.setFullScreen(!n.isFullScreen())})});e.app.on("window-all-closed",()=>{e.globalShortcut.unregister("CommandOrControl+F")});e.app.on("window-all-closed",()=>{e.globalShortcut.unregister("CommandOrControl+F"),n=null,process.platform!=="darwin"&&e.app.quit()});e.app.on("second-instance",()=>{n&&(n.isMinimized()&&n.restore(),n.focus())});e.app.on("activate",()=>{const o=e.BrowserWindow.getAllWindows();o.length?o[0].focus():c()});e.ipcMain.handle("delete-image",(o,s)=>{const t=s.path;try{w.unlinkSync(t)}catch(p){console.error(p)}});e.ipcMain.handle("open-win",(o,s)=>{const t=new e.BrowserWindow({webPreferences:{preload:i,nodeIntegration:!0,contextIsolation:!1}});process.env.VITE_DEV_SERVER_URL?t.loadURL(`${l}#${s}`):t.loadFile(a,{hash:s})});
+"use strict";
+const electron = require("electron");
+const node_os = require("node:os");
+const node_path = require("node:path");
+const fs = require("fs");
+const url$1 = require("url");
+process.env.DIST_ELECTRON = node_path.join(__dirname, "..");
+process.env.DIST = node_path.join(process.env.DIST_ELECTRON, "../dist");
+process.env.PUBLIC = process.env.VITE_DEV_SERVER_URL ? node_path.join(process.env.DIST_ELECTRON, "../public") : process.env.DIST;
+if (node_os.release().startsWith("6.1"))
+  electron.app.disableHardwareAcceleration();
+if (process.platform === "win32")
+  electron.app.setAppUserModelId(electron.app.getName());
+if (!electron.app.requestSingleInstanceLock()) {
+  electron.app.quit();
+  process.exit(0);
+}
+let win = null;
+const preload = node_path.join(__dirname, "../preload/index.js");
+const url = process.env.VITE_DEV_SERVER_URL;
+const indexHtml = node_path.join(process.env.DIST, "index.html");
+async function createWindow() {
+  win = new electron.BrowserWindow({
+    title: "Mira",
+    icon: node_path.join(process.env.PUBLIC, "favicon.ico"),
+    webPreferences: {
+      preload,
+      // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
+      // Consider using contextBridge.exposeInMainWorld
+      // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  if (process.env.VITE_DEV_SERVER_URL) {
+    win.loadURL(url);
+    win.webContents.openDevTools();
+  } else {
+    win.loadFile(indexHtml);
+  }
+  win.webContents.on("did-finish-load", () => {
+    win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
+  });
+  win.webContents.setWindowOpenHandler(({ url: url2 }) => {
+    if (url2.startsWith("https:"))
+      electron.shell.openExternal(url2);
+    return { action: "deny" };
+  });
+}
+electron.app.whenReady().then(async () => {
+  await createWindow();
+  electron.protocol.registerFileProtocol("atom", (request, callback) => {
+    const filePath = url$1.fileURLToPath("file://" + request.url.slice("atom://".length));
+    callback(filePath);
+  });
+  const menuTemplate = [
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "New",
+          accelerator: process.platform === "darwin" ? "Cmd+N" : "Ctrl+N",
+          click: createWindow
+        },
+        {
+          label: "Close",
+          accelerator: process.platform === "darwin" ? "Cmd+W" : "Ctrl+W",
+          role: "close"
+        }
+        // Add other menu items as needed
+      ]
+    }
+  ];
+  const menu = electron.Menu.buildFromTemplate(menuTemplate);
+  electron.Menu.setApplicationMenu(menu);
+  electron.globalShortcut.register("CommandOrControl+F", () => {
+    win.setFullScreen(!win.isFullScreen());
+  });
+});
+function openFile(filePath) {
+  electron.shell.openPath(filePath).then(() => {
+    console.log("File opened successfully");
+  }).catch((error) => {
+    console.error("Error opening file:", error);
+  });
+}
+electron.app.on("window-all-closed", () => {
+  electron.globalShortcut.unregister("CommandOrControl+F");
+});
+electron.app.on("window-all-closed", () => {
+  electron.globalShortcut.unregister("CommandOrControl+F");
+  win = null;
+  if (process.platform !== "darwin")
+    electron.app.quit();
+});
+electron.app.on("second-instance", () => {
+  if (win) {
+    if (win.isMinimized())
+      win.restore();
+    win.focus();
+  }
+});
+electron.app.on("activate", () => {
+  const allWindows = electron.BrowserWindow.getAllWindows();
+  if (allWindows.length) {
+    allWindows[0].focus();
+  } else {
+    createWindow();
+  }
+});
+electron.ipcMain.handle("open-file", (_, arg) => {
+  const path2 = arg.path;
+  openFile(path2);
+});
+electron.ipcMain.handle("delete-image", (_, arg) => {
+  const path2 = arg.path;
+  try {
+    fs.unlinkSync(path2);
+  } catch (err) {
+    console.error(err);
+  }
+});
+electron.ipcMain.handle("open-win", (_, arg) => {
+  const childWindow = new electron.BrowserWindow({
+    webPreferences: {
+      preload,
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  if (process.env.VITE_DEV_SERVER_URL) {
+    childWindow.loadURL(`${url}#${arg}`);
+  } else {
+    childWindow.loadFile(indexHtml, { hash: arg });
+  }
+});
+//# sourceMappingURL=index.js.map
