@@ -123,7 +123,9 @@ function deleteCurrent() {
 
 const handleKey = (event: any) => {
   console.log(`on keydown keycode=${event.keyCode}`);
-  if (event.keyCode === 37 || event.keyCode == 65) {        // Left arrow / 'a' - Previous Image
+  if (event.keyCode == 8 || event.keyCode == 46 || (event.keyCode == 68 && event.shiftKey)) { // 'D'/del/backspace, delete file 
+    deleteCurrent();
+  } else if (event.keyCode === 37 || event.keyCode == 65) {        // Left arrow / 'a' - Previous Image
     prevImage();
   } else if (event.keyCode === 39 || event.keyCode == 68) { // Right arrow / 'd' - Next Image
     nextImage();
@@ -145,8 +147,6 @@ const handleKey = (event: any) => {
     removeAll();
   } else if (event.keyCode == 79) { // 'o', open file using system viewer
     openFileUsingSystemViewer();
-  } else if (event.keyCode == 68 && event.shiftKey) { // 'D', delete file 
-    deleteCurrent();
   }
   update();
 };

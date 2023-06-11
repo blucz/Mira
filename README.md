@@ -17,7 +17,7 @@ This was developed in 2023 with a healthy dose of ChatGPT and Github CoPilot. Th
 - Home: go to first image
 - End: go to last image
 - x: remove current image from the list
-- D: delete current image from disk
+- D/Del/backspace: delete current image from disk
 - c: remove all images from the list
 - r: randomize order of images
 - q: quit
