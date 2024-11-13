@@ -131,7 +131,7 @@ const handleKey = (event: any) => {
     nextImage();
   } else if (event.keyCode === 38 || event.keyCode == 87) { // Up arrow / 'w' - Increase Slideshow Duration
     increaseSlideshowDuration();
-  } else if (event.keyCode === 40 || event.keyCode == 73) { // Down arrow / 's' - Decreas Slideshow Duration
+  } else if (event.keyCode === 40 || event.keyCode == 83) { // Down arrow / 's' - Decrease Slideshow Duration
     decreaseSlideshowDuration();
   } else if (event.keyCode == 82) { // 'r' - Randomize
     shuffleArray(images);
