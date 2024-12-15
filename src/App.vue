@@ -18,6 +18,7 @@ const count               : Ref<number>            = ref(-1);
 const image               : Ref<Image | undefined> = ref(undefined);
 const isSlideshow         : Ref<boolean>           = ref(false);
 const slideshowDurationMs : Ref<number>            = ref(10000);
+const showCaptions        : Ref<boolean>           = ref(true);
 
 
 type IntervalId = ReturnType<typeof setInterval>;
@@ -131,7 +132,7 @@ const handleKey = (event: any) => {
     nextImage();
   } else if (event.keyCode === 38 || event.keyCode == 87) { // Up arrow / 'w' - Increase Slideshow Duration
     increaseSlideshowDuration();
-  } else if (event.keyCode === 40 || event.keyCode == 83) { // Down arrow / 's' - Decrease Slideshow Duration
+  } else if (event.keyCode === 40 || event.keyCode === 83) { // Down arrow / 's' - Decrease Slideshow Duration
     decreaseSlideshowDuration();
   } else if (event.keyCode == 82) { // 'r' - Randomize
     shuffleArray(images);
@@ -143,6 +144,8 @@ const handleKey = (event: any) => {
     goToLast();
   } else if (event.keyCode == 88) { // 'x', remove current image
     removeCurrent()
+  } else if (event.keyCode == 67 && event.shiftKey) { // 'C', toggle captions
+    showCaptions.value = !showCaptions.value;
   } else if (event.keyCode == 67) { // 'c', remove all images
     removeAll();
   } else if (event.keyCode == 79) { // 'o', open file using system viewer
@@ -171,7 +174,7 @@ window.addEventListener('keydown', handleKey);
     <div id="image-container" @dragenter="handleDragEnter" @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
       <div ref='dropIcon' class="bi bi-card-image" style='font-size: 160px' v-if='!image' />
       <img id='image' v-if='image' :src='image.url' />
-
+      <div id='caption' v-if='image && image.caption && showCaptions'>{{ image.caption }}</div>
     </div>
     <div id='xofy' v-if='index >= 0'>
       <div>
@@ -192,6 +195,17 @@ window.addEventListener('keydown', handleKey);
     height: 100%;
     margin: 0;
     padding: 0;
+  }
+  #caption {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    padding: 16px;
+    text-align: center;
+    font-size: 1.1em;
   }
   #xofy {
     position: absolute;
