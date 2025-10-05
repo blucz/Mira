@@ -173,12 +173,13 @@ window.addEventListener('keydown', handleKey);
   <div class="app-container">
     <div id="image-container" @dragenter="handleDragEnter" @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
       <div ref='dropIcon' class="bi bi-card-image" style='font-size: 160px' v-if='!image' />
-      <img id='image' v-if='image' :src='image.url' />
+      <img id='image' v-if='image && !image.isVideo()' :src='image.url' />
+      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop muted />
       <div id='caption' v-if='image && image.caption && showCaptions'>{{ image.caption }}</div>
     </div>
     <div id='xofy' v-if='index >= 0'>
       <div>
-        {{index+1}} / {{count}} 
+        {{index+1}} / {{count}}
       </div>
       <div style='text-align:right'>
         <span v-if='isSlideshow'>
@@ -224,6 +225,11 @@ window.addEventListener('keydown', handleKey);
       align-items: center;
   }
   #image {
+      height: 100%;
+      width: 100%;
+      object-fit: contain;
+  }
+  #video {
       height: 100%;
       width: 100%;
       object-fit: contain;

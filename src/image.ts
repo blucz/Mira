@@ -3,6 +3,8 @@ import { stat } from 'fs/promises';
 import path from 'path';
 import { ref, Ref } from 'vue';
 
+const videoExtensions = ['.mp4', '.webm', '.mov', '.avi', '.mkv', '.ogg'];
+
 export class Image {
   path: string;
   exists: Ref<boolean | undefined>;
@@ -31,7 +33,12 @@ export class Image {
   }
 
   get url(): string {
-    return "atom://"+this.path; 
+    return "atom://"+this.path;
+  }
+
+  isVideo(): boolean {
+    const ext = path.extname(this.path).toLowerCase();
+    return videoExtensions.includes(ext);
   }
 }
 

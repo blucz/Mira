@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-export const supportedExtensions = [ '.jpg', '.png', '.gif', '.webp'/*, '.mp4' */];
+export const supportedExtensions = [ '.jpg', '.png', '.gif', '.webp', '.mp4', '.webm', '.mov', '.avi', '.mkv', '.ogg' ];
 
 export function findFilesWithExtensions(pathsOrDirs: string | string[], extensions: string[], fileList: string[] = []): string[] {
   if (!Array.isArray(pathsOrDirs)) {
