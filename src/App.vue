@@ -20,6 +20,7 @@ const isSlideshow         : Ref<boolean>           = ref(false);
 const slideshowDurationMs : Ref<number>            = ref(10000);
 const showCaptions        : Ref<boolean>           = ref(true);
 const showInfo            : Ref<boolean>           = ref(localStorage.getItem('showInfo') === 'true');
+const videoProgress       : Ref<number>            = ref(0);
 
 
 type IntervalId = ReturnType<typeof setInterval>;
@@ -191,8 +192,29 @@ const onVideoLoad = (event: Event) => {
       rawImage.width.value = video.videoWidth;
       rawImage.height.value = video.videoHeight;
     }
+    if (rawImage.duration) {
+      rawImage.duration.value = video.duration;
+    }
   }
 };
+
+const onVideoTimeUpdate = (event: Event) => {
+  const video = event.target as HTMLVideoElement;
+  if (video.duration > 0) {
+    videoProgress.value = (video.currentTime / video.duration) * 100;
+  }
+};
+
+const getProgressTransition = () => {
+  // Smooth transition that matches typical timeupdate interval (~250ms)
+  return 'width 0.5s linear';
+};
+
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
 const handleDragEnter = (event: DragEvent) => { event.preventDefault(); if (dropIcon.value) dropIcon.value.classList.add('drag-over'); };
 const handleDragOver  = (event: DragEvent) => { event.preventDefault(); };
@@ -214,14 +236,18 @@ window.addEventListener('keydown', handleKey);
     <div id="image-container" @dragenter="handleDragEnter" @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
       <div ref='dropIcon' class="bi bi-card-image" style='font-size: 160px' v-if='!image' />
       <img id='image' v-if='image && !image.isVideo()' :src='image.url' @load='onImageLoad' />
-      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop muted @loadedmetadata='onVideoLoad' />
+      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop muted @loadedmetadata='onVideoLoad' @timeupdate='onVideoTimeUpdate' />
       <div id='caption' v-if='image && image.caption && showCaptions'>{{ image.caption }}</div>
+      <div id='video-progress' v-if='image && image.isVideo()'>
+        <div id='video-progress-bar' :style="{ width: videoProgress + '%', transition: getProgressTransition() }"></div>
+      </div>
     </div>
     <div id='info-overlay' v-if='image && showInfo'>
       <div>{{ image.filename }}</div>
       <div>
         {{ image.format }}
         <span v-if='image.fileSize'> • {{ formatFileSize(image.fileSize as any) }}</span>
+        <span v-if='image.duration'> • {{ formatDuration(image.duration as any) }}</span>
         <span v-if='image.width && image.height'> • {{ image.width }} × {{ image.height }}</span>
       </div>
     </div>
@@ -292,6 +318,18 @@ window.addEventListener('keydown', handleKey);
       height: 100%;
       width: 100%;
       object-fit: contain;
+  }
+  #video-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  #video-progress-bar {
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
   }
   .drag-over {
     color: #aaa;

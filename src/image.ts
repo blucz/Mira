@@ -12,6 +12,7 @@ export class Image {
   fileSize: Ref<number | undefined>;
   width: Ref<number | undefined>;
   height: Ref<number | undefined>;
+  duration: Ref<number | undefined>;
 
   constructor(path: string) {
     this.path = path;
@@ -20,6 +21,7 @@ export class Image {
     this.fileSize = ref(undefined);
     this.width = ref(undefined);
     this.height = ref(undefined);
+    this.duration = ref(undefined);
 
     stat(path).then((value) => {
       this.exists.value = value.isFile();
