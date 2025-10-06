@@ -44,9 +44,16 @@ function formatFileSize(size: number): string {
 function addImageFiles(paths: string[]): void {
   const oldCount = images.length;
   for (let path of paths) {
-    if (imagePaths.has(path)) continue;
-    imagePaths.add(path);
-    images.push(new Image(path));
+    if (imagePaths.has(path)) {
+      // If image already exists, jump to it
+      const existingIndex = images.findIndex(img => img.path === path);
+      if (existingIndex >= 0) {
+        index.value = existingIndex;
+      }
+    } else {
+      imagePaths.add(path);
+      images.push(new Image(path));
+    }
   }
   const newCount = images.length;
   if (newCount > oldCount) {
@@ -202,7 +209,17 @@ const onVideoLoad = (event: Event) => {
 const onVideoTimeUpdate = (event: Event) => {
   const video = event.target as HTMLVideoElement;
   if (video.duration > 0) {
-    videoProgress.value = (video.currentTime / video.duration) * 100;
+    const newProgress = (video.currentTime / video.duration) * 100;
+    // If progress went backwards (video looped), reset to 0 first for crisp restart
+    if (newProgress < videoProgress.value - 10) {
+      videoProgress.value = 0;
+      // Use setTimeout to allow the DOM to update before setting new progress
+      setTimeout(() => {
+        videoProgress.value = newProgress;
+      }, 0);
+    } else {
+      videoProgress.value = newProgress;
+    }
   }
 };
 
@@ -240,7 +257,7 @@ window.addEventListener('keydown', handleKey);
       <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop muted @loadedmetadata='onVideoLoad' @timeupdate='onVideoTimeUpdate' />
       <div id='caption' v-if='image && image.caption && showCaptions'>{{ image.caption }}</div>
       <div id='video-progress' v-if='image && image.isVideo()'>
-        <div id='video-progress-bar' :style="{ width: videoProgress + '%', transition: videoProgress === 0 ? 'none' : getProgressTransition() }"></div>
+        <div id='video-progress-bar' :style="{ width: videoProgress + '%', transition: videoProgress < 5 ? 'none' : getProgressTransition() }"></div>
       </div>
     </div>
     <div id='info-overlay' v-if='image && showInfo'>
@@ -326,11 +343,11 @@ window.addEventListener('keydown', handleKey);
     left: 0;
     right: 0;
     height: 3px;
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(255, 255, 255, 0.1);
   }
   #video-progress-bar {
     height: 100%;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.4);
   }
   .drag-over {
     color: #aaa;
