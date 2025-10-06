@@ -221,8 +221,8 @@ window.addEventListener('keydown', handleKey);
       <div>{{ image.filename }}</div>
       <div>
         {{ image.format }}
-        <span v-if='image.width && image.height'> • {{ image.width }} × {{ image.height }}</span>
         <span v-if='image.fileSize'> • {{ formatFileSize(image.fileSize as any) }}</span>
+        <span v-if='image.width && image.height'> • {{ image.width }} × {{ image.height }}</span>
       </div>
     </div>
     <div id='xofy' v-if='index >= 0'>

@@ -1,6 +1,6 @@
 {
   "name": "Mira",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "main": "dist-electron/main/index.js",
   "description": "Dead simple image viewer",
   "author": "Brian Luczkiewicz <brian@blucz.com>",
