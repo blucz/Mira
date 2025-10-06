@@ -31,6 +31,7 @@ function update() {
   if (index.value >= images.length)         index.value = images.length - 1;
   image.value = images[index.value];
   count.value = images.length;
+  videoProgress.value = 0; // Reset video progress when changing images
 }
 
 function formatFileSize(size: number): string {
@@ -239,7 +240,7 @@ window.addEventListener('keydown', handleKey);
       <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop muted @loadedmetadata='onVideoLoad' @timeupdate='onVideoTimeUpdate' />
       <div id='caption' v-if='image && image.caption && showCaptions'>{{ image.caption }}</div>
       <div id='video-progress' v-if='image && image.isVideo()'>
-        <div id='video-progress-bar' :style="{ width: videoProgress + '%', transition: getProgressTransition() }"></div>
+        <div id='video-progress-bar' :style="{ width: videoProgress + '%', transition: videoProgress === 0 ? 'none' : getProgressTransition() }"></div>
       </div>
     </div>
     <div id='info-overlay' v-if='image && showInfo'>
