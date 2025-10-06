@@ -19,7 +19,9 @@ This was developed in 2023 with a healthy dose of ChatGPT and Github CoPilot. Th
 - x: remove current image from the list
 - D/Del/backspace: delete current image from disk
 - c: remove all images from the list
+- C (shift+c): toggle captions
 - r: randomize order of images
+- i: toggle info overlay (shows filename, format, resolution, file size)
 - q: quit
 - o: open using system viewer
 - spacebar: start/stop slideshow

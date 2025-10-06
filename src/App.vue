@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, Ref } from 'vue';
+import { ref, Ref, toRaw } from 'vue';
 import { supportedExtensions, findFilesWithExtensions, shuffleArray } from './utils';
 import { Image } from './image';
 import { ipcRenderer } from 'electron';
@@ -19,6 +19,7 @@ const image               : Ref<Image | undefined> = ref(undefined);
 const isSlideshow         : Ref<boolean>           = ref(false);
 const slideshowDurationMs : Ref<number>            = ref(10000);
 const showCaptions        : Ref<boolean>           = ref(true);
+const showInfo            : Ref<boolean>           = ref(localStorage.getItem('showInfo') === 'true');
 
 
 type IntervalId = ReturnType<typeof setInterval>;
@@ -29,6 +30,13 @@ function update() {
   if (index.value >= images.length)         index.value = images.length - 1;
   image.value = images[index.value];
   count.value = images.length;
+}
+
+function formatFileSize(size: number): string {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  if (size < 1024 * 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(size / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
 function addImageFiles(paths: string[]): void {
@@ -124,7 +132,7 @@ function deleteCurrent() {
 
 const handleKey = (event: any) => {
   console.log(`on keydown keycode=${event.keyCode}`);
-  if (event.keyCode == 8 || event.keyCode == 46 || (event.keyCode == 68 && event.shiftKey)) { // 'D'/del/backspace, delete file 
+  if (event.keyCode == 8 || event.keyCode == 46 || (event.keyCode == 68 && event.shiftKey)) { // 'D'/del/backspace, delete file
     deleteCurrent();
   } else if (event.keyCode === 37 || event.keyCode == 65) {        // Left arrow / 'a' - Previous Image
     prevImage();
@@ -150,8 +158,40 @@ const handleKey = (event: any) => {
     removeAll();
   } else if (event.keyCode == 79) { // 'o', open file using system viewer
     openFileUsingSystemViewer();
+  } else if (event.keyCode == 73) { // 'i', toggle info overlay
+    showInfo.value = !showInfo.value;
+    localStorage.setItem('showInfo', showInfo.value.toString());
   }
   update();
+};
+
+const onImageLoad = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  const currentImage = image.value;
+  if (currentImage && currentImage.url === img.src) {
+    // Use toRaw to get the actual Image object with its Ref properties
+    const rawImage = toRaw(currentImage);
+    console.log('rawImage:', rawImage);
+    console.log('rawImage.width:', rawImage.width);
+    console.log('rawImage.height:', rawImage.height);
+    if (rawImage.width && rawImage.height) {
+      rawImage.width.value = img.naturalWidth;
+      rawImage.height.value = img.naturalHeight;
+      console.log('Set dimensions:', rawImage.width.value, rawImage.height.value);
+    }
+  }
+};
+
+const onVideoLoad = (event: Event) => {
+  const video = event.target as HTMLVideoElement;
+  const currentImage = image.value;
+  if (currentImage && currentImage.url === video.src) {
+    const rawImage = toRaw(currentImage);
+    if (rawImage.width && rawImage.height) {
+      rawImage.width.value = video.videoWidth;
+      rawImage.height.value = video.videoHeight;
+    }
+  }
 };
 
 const handleDragEnter = (event: DragEvent) => { event.preventDefault(); if (dropIcon.value) dropIcon.value.classList.add('drag-over'); };
@@ -173,9 +213,17 @@ window.addEventListener('keydown', handleKey);
   <div class="app-container">
     <div id="image-container" @dragenter="handleDragEnter" @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
       <div ref='dropIcon' class="bi bi-card-image" style='font-size: 160px' v-if='!image' />
-      <img id='image' v-if='image && !image.isVideo()' :src='image.url' />
-      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop muted />
+      <img id='image' v-if='image && !image.isVideo()' :src='image.url' @load='onImageLoad' />
+      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop muted @loadedmetadata='onVideoLoad' />
       <div id='caption' v-if='image && image.caption && showCaptions'>{{ image.caption }}</div>
+    </div>
+    <div id='info-overlay' v-if='image && showInfo'>
+      <div>{{ image.filename }}</div>
+      <div>
+        {{ image.format }}
+        <span v-if='image.width && image.height'> • {{ image.width }} × {{ image.height }}</span>
+        <span v-if='image.fileSize'> • {{ formatFileSize(image.fileSize as any) }}</span>
+      </div>
     </div>
     <div id='xofy' v-if='index >= 0'>
       <div>
@@ -207,6 +255,17 @@ window.addEventListener('keydown', handleKey);
     padding: 16px;
     text-align: center;
     font-size: 1.1em;
+  }
+  #info-overlay {
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    background-color: rgba(0, 0, 0, 0.75);
+    color: #eee;
+    padding: 8px 10px;
+    font-family: monospace;
+    font-size: 0.75em;
+    line-height: 1.4;
   }
   #xofy {
     position: absolute;
