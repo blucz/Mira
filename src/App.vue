@@ -21,6 +21,7 @@ const slideshowDurationMs : Ref<number>            = ref(10000);
 const showCaptions        : Ref<boolean>           = ref(true);
 const showInfo            : Ref<boolean>           = ref(localStorage.getItem('showInfo') === 'true');
 const videoProgress       : Ref<number>            = ref(0);
+const isMuted             : Ref<boolean>           = ref(true);
 
 
 type IntervalId = ReturnType<typeof setInterval>;
@@ -170,6 +171,8 @@ const handleKey = (event: any) => {
   } else if (event.keyCode == 73) { // 'i', toggle info overlay
     showInfo.value = !showInfo.value;
     localStorage.setItem('showInfo', showInfo.value.toString());
+  } else if (event.keyCode == 77) { // 'm', toggle mute
+    isMuted.value = !isMuted.value;
   }
   update();
 };
@@ -202,6 +205,18 @@ const onVideoLoad = (event: Event) => {
     }
     if (rawImage.duration) {
       rawImage.duration.value = video.duration;
+    }
+    if (rawImage.hasAudio) {
+      // Default to true (assume audio) - will hide if we detect no audio
+      rawImage.hasAudio.value = true;
+
+      // Check after a short delay to allow audio tracks to be detected
+      setTimeout(() => {
+        const hasAudioTrack = (video as any).mozHasAudio ||
+                             Boolean((video as any).webkitAudioDecodedByteCount) ||
+                             Boolean(video.audioTracks && video.audioTracks.length);
+        rawImage.hasAudio.value = hasAudioTrack;
+      }, 100);
     }
   }
 };
@@ -254,7 +269,7 @@ window.addEventListener('keydown', handleKey);
     <div id="image-container" @dragenter="handleDragEnter" @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
       <div ref='dropIcon' class="bi bi-card-image" style='font-size: 160px' v-if='!image' />
       <img id='image' v-if='image && !image.isVideo()' :src='image.url' @load='onImageLoad' />
-      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop muted @loadedmetadata='onVideoLoad' @timeupdate='onVideoTimeUpdate' />
+      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop :muted='isMuted' @loadedmetadata='onVideoLoad' @timeupdate='onVideoTimeUpdate' />
       <div id='caption' v-if='image && image.caption && showCaptions'>{{ image.caption }}</div>
       <div id='video-progress' v-if='image && image.isVideo()'>
         <div id='video-progress-bar' :style="{ width: videoProgress + '%', transition: videoProgress < 5 ? 'none' : getProgressTransition() }"></div>
@@ -278,6 +293,9 @@ window.addEventListener('keydown', handleKey);
           {{slideshowDurationMs/1000}}s
         </span>
       </div>
+    </div>
+    <div id='audio-control' v-if='image && image.isVideo() && image.hasAudio' @click='isMuted = !isMuted'>
+      <i :class="isMuted ? 'bi bi-volume-mute-fill' : 'bi bi-volume-up-fill'"></i>
     </div>
   </div>
 </template>
@@ -318,6 +336,16 @@ window.addEventListener('keydown', handleKey);
     background-color: rgba(0, 0, 0, 0.6);
     color: #eee;
     padding: 8px;
+  }
+  #audio-control {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: #eee;
+    padding: 8px;
+    font-size: 1.2em;
+    cursor: pointer;
   }
   #image-container {
       color: #666;
