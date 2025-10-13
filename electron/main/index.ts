@@ -165,6 +165,12 @@ ipcMain.handle('delete-image', (_,arg: { path: string } ) => {
     }
 });
 
+ipcMain.handle('set-represented-file', (_,arg: { path: string } ) => {
+  if (win && process.platform === 'darwin') {
+    win.setRepresentedFilename(arg.path);
+  }
+});
+
 // New window example arg: new windows url
 ipcMain.handle('open-win', (_, arg) => {
   const childWindow = new BrowserWindow({

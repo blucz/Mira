@@ -33,6 +33,11 @@ function update() {
   image.value = images[index.value];
   count.value = images.length;
   videoProgress.value = 0; // Reset video progress when changing images
+
+  // Set represented file for macOS title bar
+  if (image.value) {
+    ipcRenderer.invoke('set-represented-file', { path: image.value.path });
+  }
 }
 
 function formatFileSize(size: number): string {

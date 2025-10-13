@@ -120,6 +120,11 @@ electron.ipcMain.handle("delete-image", (_, arg) => {
     console.error(err);
   }
 });
+electron.ipcMain.handle("set-represented-file", (_, arg) => {
+  if (win && process.platform === "darwin") {
+    win.setRepresentedFilename(arg.path);
+  }
+});
 electron.ipcMain.handle("open-win", (_, arg) => {
   const childWindow = new electron.BrowserWindow({
     webPreferences: {
