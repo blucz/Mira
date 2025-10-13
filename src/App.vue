@@ -219,7 +219,7 @@ const onVideoLoad = (event: Event) => {
       setTimeout(() => {
         const hasAudioTrack = (video as any).mozHasAudio ||
                              Boolean((video as any).webkitAudioDecodedByteCount) ||
-                             Boolean(video.audioTracks && video.audioTracks.length);
+                             Boolean((video as any).audioTracks && (video as any).audioTracks.length);
         rawImage.hasAudio.value = hasAudioTrack;
       }, 100);
     }
