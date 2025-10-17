@@ -22,6 +22,7 @@ const showCaptions        : Ref<boolean>           = ref(true);
 const showInfo            : Ref<boolean>           = ref(localStorage.getItem('showInfo') === 'true');
 const videoProgress       : Ref<number>            = ref(0);
 const isMuted             : Ref<boolean>           = ref(true);
+const isLoopEnabled       : Ref<boolean>           = ref(false);
 
 
 type IntervalId = ReturnType<typeof setInterval>;
@@ -78,9 +79,21 @@ console.log("toggleslideshow")
     slideshowIntervalTimer = setInterval(function() {
       const oldValue = index.value;
       index.value = index.value + 1;
+
+      // If we reached the end
+      if (index.value >= images.length) {
+        if (isLoopEnabled.value) {
+          index.value = 0; // Loop back to start
+        } else {
+          index.value = oldValue; // Stay at last image
+          toggleSlideshow(); // Stop slideshow
+          return;
+        }
+      }
+
       update();
 
-      // If we couldn't advance, stop slideshow
+      // If we couldn't advance (shouldn't happen with new logic, but keep as safeguard)
       if (oldValue == index.value) {
         toggleSlideshow();
       }
@@ -178,6 +191,8 @@ const handleKey = (event: any) => {
     localStorage.setItem('showInfo', showInfo.value.toString());
   } else if (event.keyCode == 77) { // 'm', toggle mute
     isMuted.value = !isMuted.value;
+  } else if (event.keyCode == 76) { // 'l', toggle loop
+    isLoopEnabled.value = !isLoopEnabled.value;
   }
   update();
 };
@@ -295,6 +310,7 @@ window.addEventListener('keydown', handleKey);
       </div>
       <div style='text-align:right'>
         <span v-if='isSlideshow'>
+          <i v-if='isLoopEnabled' class='bi bi-arrow-repeat' style='margin-right: 4px'></i>
           {{slideshowDurationMs/1000}}s
         </span>
       </div>
