@@ -8,6 +8,10 @@ This implements the minimal subset of the ViewIt functionality that I cared abou
 
 This was developed in 2023 with a healthy dose of ChatGPT and Github CoPilot. The App icon was created using Stable Diffusion.
 
+## How to Use
+
+I don't publish Windows or Mac binaries because code signing is a pain. However, if you check this out, install nodejs and run `npm i; npm run build` in this folder, you'll get Windows and Mac binaries that run on your machine just fine. 
+
 ## Keyboard commands:
 
 - Left / a: view previous image
@@ -19,11 +23,10 @@ This was developed in 2023 with a healthy dose of ChatGPT and Github CoPilot. Th
 - x: remove current image from the list
 - D/Del/backspace: delete current image from disk
 - c: remove all images from the list
-- C (shift+c): toggle captions
+- C (shift+c): toggle display of image captions
 - r: randomize order of images
 - i: toggle info overlay (shows filename, format, resolution, file size)
+- l: toggle loop mode
 - q: quit
 - o: open using system viewer
 - spacebar: start/stop slideshow
-
-
