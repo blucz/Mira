@@ -1,1 +1,193 @@
-"use strict";const e=require("electron"),u=require("node:os"),r=require("node:path"),f=require("fs"),h=require("url");process.env.DIST_ELECTRON=r.join(__dirname,"..");process.env.DIST=r.join(process.env.DIST_ELECTRON,"../dist");process.env.PUBLIC=process.env.VITE_DEV_SERVER_URL?r.join(process.env.DIST_ELECTRON,"../public"):process.env.DIST;u.release().startsWith("6.1")&&e.app.disableHardwareAcceleration();process.platform==="win32"&&e.app.setAppUserModelId(e.app.getName());e.app.requestSingleInstanceLock()||(e.app.quit(),process.exit(0));let n=null;const a=r.join(__dirname,"../preload/index.js"),c=process.env.VITE_DEV_SERVER_URL,p=r.join(process.env.DIST,"index.html");async function i(){n=new e.BrowserWindow({title:"Mira",icon:r.join(process.env.PUBLIC,"favicon.ico"),webPreferences:{preload:a,nodeIntegration:!0,contextIsolation:!1}}),process.env.VITE_DEV_SERVER_URL?(n.loadURL(c),n.webContents.openDevTools()):n.loadFile(p),n.webContents.on("did-finish-load",()=>{n==null||n.webContents.send("main-process-message",new Date().toLocaleString())}),n.webContents.setWindowOpenHandler(({url:o})=>(o.startsWith("https:")&&e.shell.openExternal(o),{action:"deny"}))}e.app.whenReady().then(async()=>{await i(),e.protocol.registerFileProtocol("atom",(t,l)=>{const d=h.fileURLToPath("file://"+t.url.slice(7));l(d)});const o=[{label:"File",submenu:[{label:"New",accelerator:process.platform==="darwin"?"Cmd+N":"Ctrl+N",click:i},{label:"Close",accelerator:process.platform==="darwin"?"Cmd+W":"Ctrl+W",role:"close"}]}],s=e.Menu.buildFromTemplate(o);e.Menu.setApplicationMenu(s),e.globalShortcut.register("CommandOrControl+F",()=>{n.setFullScreen(!n.isFullScreen())})});function w(o){e.shell.openPath(o).then(()=>{console.log("File opened successfully")}).catch(s=>{console.error("Error opening file:",s)})}e.app.on("window-all-closed",()=>{e.globalShortcut.unregister("CommandOrControl+F")});e.app.on("window-all-closed",()=>{e.globalShortcut.unregister("CommandOrControl+F"),n=null,process.platform!=="darwin"&&e.app.quit()});e.app.on("second-instance",()=>{n&&(n.isMinimized()&&n.restore(),n.focus())});e.app.on("activate",()=>{const o=e.BrowserWindow.getAllWindows();o.length?o[0].focus():i()});e.ipcMain.handle("open-file",(o,s)=>{const t=s.path;w(t)});e.ipcMain.handle("delete-image",(o,s)=>{const t=s.path;try{f.unlinkSync(t)}catch(l){console.error(l)}});e.ipcMain.handle("set-represented-file",(o,s)=>{n&&process.platform==="darwin"&&n.setRepresentedFilename(s.path)});e.ipcMain.handle("open-win",(o,s)=>{const t=new e.BrowserWindow({webPreferences:{preload:a,nodeIntegration:!0,contextIsolation:!1}});process.env.VITE_DEV_SERVER_URL?t.loadURL(`${c}#${s}`):t.loadFile(p,{hash:s})});
+"use strict";
+const electron = require("electron");
+const node_os = require("node:os");
+const node_path = require("node:path");
+const path = require("path");
+const fs = require("fs");
+process.env.DIST_ELECTRON = node_path.join(__dirname, "..");
+process.env.DIST = node_path.join(process.env.DIST_ELECTRON, "../dist");
+process.env.PUBLIC = process.env.VITE_DEV_SERVER_URL ? node_path.join(process.env.DIST_ELECTRON, "../public") : process.env.DIST;
+if (node_os.release().startsWith("6.1"))
+  electron.app.disableHardwareAcceleration();
+if (process.platform === "win32")
+  electron.app.setAppUserModelId(electron.app.getName());
+if (!electron.app.requestSingleInstanceLock()) {
+  electron.app.quit();
+  process.exit(0);
+}
+let win = null;
+const preload = node_path.join(__dirname, "../preload/index.js");
+const url = process.env.VITE_DEV_SERVER_URL;
+const indexHtml = node_path.join(process.env.DIST, "index.html");
+async function createWindow() {
+  win = new electron.BrowserWindow({
+    title: "Mira",
+    icon: node_path.join(process.env.PUBLIC, "favicon.ico"),
+    webPreferences: {
+      preload,
+      // Warning: Enable nodeIntegration and disable contextIsolation is not secure in production
+      // Consider using contextBridge.exposeInMainWorld
+      // Read more on https://www.electronjs.org/docs/latest/tutorial/context-isolation
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  if (process.env.VITE_DEV_SERVER_URL) {
+    win.loadURL(url);
+    win.webContents.openDevTools();
+  } else {
+    win.loadFile(indexHtml);
+  }
+  win.webContents.on("did-finish-load", () => {
+    win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
+  });
+  win.webContents.setWindowOpenHandler(({ url: url2 }) => {
+    if (url2.startsWith("https:"))
+      electron.shell.openExternal(url2);
+    return { action: "deny" };
+  });
+}
+electron.app.whenReady().then(async () => {
+  electron.protocol.handle("atom", async (request) => {
+    const filePath = decodeURIComponent(request.url.slice("atom://".length));
+    try {
+      const stats = await fs.promises.stat(filePath);
+      const fileSize = stats.size;
+      const ext = path.extname(filePath).toLowerCase();
+      const mimeTypes = {
+        ".mp4": "video/mp4",
+        ".webm": "video/webm",
+        ".mov": "video/quicktime",
+        ".avi": "video/x-msvideo",
+        ".mkv": "video/x-matroska",
+        ".ogg": "video/ogg",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+        ".bmp": "image/bmp"
+      };
+      const mimeType = mimeTypes[ext] || "application/octet-stream";
+      const rangeHeader = request.headers.get("Range");
+      if (rangeHeader) {
+        const parts = rangeHeader.replace(/bytes=/, "").split("-");
+        const start = parseInt(parts[0], 10);
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+        const chunkSize = end - start + 1;
+        const buffer = Buffer.alloc(chunkSize);
+        const fd = await fs.promises.open(filePath, "r");
+        await fd.read(buffer, 0, chunkSize, start);
+        await fd.close();
+        return new Response(buffer, {
+          status: 206,
+          headers: {
+            "Content-Type": mimeType,
+            "Content-Length": chunkSize.toString(),
+            "Content-Range": `bytes ${start}-${end}/${fileSize}`,
+            "Accept-Ranges": "bytes"
+          }
+        });
+      } else {
+        const data = await fs.promises.readFile(filePath);
+        return new Response(data, {
+          headers: {
+            "Content-Type": mimeType,
+            "Content-Length": fileSize.toString(),
+            "Accept-Ranges": "bytes"
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error loading file:", error);
+      return new Response("File not found", { status: 404 });
+    }
+  });
+  await createWindow();
+  const menuTemplate = [
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "New",
+          accelerator: process.platform === "darwin" ? "Cmd+N" : "Ctrl+N",
+          click: createWindow
+        },
+        {
+          label: "Close",
+          accelerator: process.platform === "darwin" ? "Cmd+W" : "Ctrl+W",
+          role: "close"
+        }
+        // Add other menu items as needed
+      ]
+    }
+  ];
+  const menu = electron.Menu.buildFromTemplate(menuTemplate);
+  electron.Menu.setApplicationMenu(menu);
+  electron.globalShortcut.register("CommandOrControl+F", () => {
+    win.setFullScreen(!win.isFullScreen());
+  });
+});
+function openFile(filePath) {
+  electron.shell.openPath(filePath).then(() => {
+    console.log("File opened successfully");
+  }).catch((error) => {
+    console.error("Error opening file:", error);
+  });
+}
+electron.app.on("window-all-closed", () => {
+  electron.globalShortcut.unregister("CommandOrControl+F");
+});
+electron.app.on("window-all-closed", () => {
+  electron.globalShortcut.unregister("CommandOrControl+F");
+  win = null;
+  if (process.platform !== "darwin")
+    electron.app.quit();
+});
+electron.app.on("second-instance", () => {
+  if (win) {
+    if (win.isMinimized())
+      win.restore();
+    win.focus();
+  }
+});
+electron.app.on("activate", () => {
+  const allWindows = electron.BrowserWindow.getAllWindows();
+  if (allWindows.length) {
+    allWindows[0].focus();
+  } else {
+    createWindow();
+  }
+});
+electron.ipcMain.handle("open-file", (_, arg) => {
+  const path2 = arg.path;
+  openFile(path2);
+});
+electron.ipcMain.handle("delete-image", (_, arg) => {
+  const path2 = arg.path;
+  try {
+    fs.unlinkSync(path2);
+  } catch (err) {
+    console.error(err);
+  }
+});
+electron.ipcMain.handle("set-represented-file", (_, arg) => {
+  if (win && process.platform === "darwin") {
+    win.setRepresentedFilename(arg.path);
+  }
+});
+electron.ipcMain.handle("open-win", (_, arg) => {
+  const childWindow = new electron.BrowserWindow({
+    webPreferences: {
+      preload,
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+  if (process.env.VITE_DEV_SERVER_URL) {
+    childWindow.loadURL(`${url}#${arg}`);
+  } else {
+    childWindow.loadFile(indexHtml, { hash: arg });
+  }
+});
+//# sourceMappingURL=index.js.map

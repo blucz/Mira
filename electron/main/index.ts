@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, shell, ipcMain, protocol, globalShortcut, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell, ipcMain, protocol, globalShortcut, shell, net } from 'electron'
 import { release } from 'node:os'
 import { join } from 'node:path'
 import path from 'path'
@@ -79,11 +79,75 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  await createWindow();
-  protocol.registerFileProtocol('atom', (request, callback) => {
-    const filePath = fileURLToPath('file://' + request.url.slice('atom://'.length))
-    callback(filePath)
+  // Register the custom protocol handler before creating window
+  protocol.handle('atom', async (request) => {
+    const filePath = decodeURIComponent(request.url.slice('atom://'.length))
+
+    try {
+      const stats = await fs.promises.stat(filePath)
+      const fileSize = stats.size
+
+      // Determine MIME type based on file extension
+      const ext = path.extname(filePath).toLowerCase()
+      const mimeTypes: { [key: string]: string } = {
+        '.mp4': 'video/mp4',
+        '.webm': 'video/webm',
+        '.mov': 'video/quicktime',
+        '.avi': 'video/x-msvideo',
+        '.mkv': 'video/x-matroska',
+        '.ogg': 'video/ogg',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.bmp': 'image/bmp',
+      }
+      const mimeType = mimeTypes[ext] || 'application/octet-stream'
+
+      // Check for range request
+      const rangeHeader = request.headers.get('Range')
+
+      if (rangeHeader) {
+        // Parse range header
+        const parts = rangeHeader.replace(/bytes=/, '').split('-')
+        const start = parseInt(parts[0], 10)
+        const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+        const chunkSize = (end - start) + 1
+
+        // Read the requested chunk
+        const buffer = Buffer.alloc(chunkSize)
+        const fd = await fs.promises.open(filePath, 'r')
+        await fd.read(buffer, 0, chunkSize, start)
+        await fd.close()
+
+        return new Response(buffer, {
+          status: 206,
+          headers: {
+            'Content-Type': mimeType,
+            'Content-Length': chunkSize.toString(),
+            'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+            'Accept-Ranges': 'bytes',
+          }
+        })
+      } else {
+        // No range request, send entire file
+        const data = await fs.promises.readFile(filePath)
+        return new Response(data, {
+          headers: {
+            'Content-Type': mimeType,
+            'Content-Length': fileSize.toString(),
+            'Accept-Ranges': 'bytes',
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Error loading file:', error)
+      return new Response('File not found', { status: 404 })
+    }
   });
+
+  await createWindow();
 
   // Create the menu template
   const menuTemplate = [

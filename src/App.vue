@@ -217,6 +217,7 @@ const onImageLoad = (event: Event) => {
 const onVideoLoad = (event: Event) => {
   const video = event.target as HTMLVideoElement;
   const currentImage = image.value;
+  console.log('Video loaded successfully:', currentImage?.path);
   if (currentImage && currentImage.url === video.src) {
     const rawImage = toRaw(currentImage);
     if (rawImage.width && rawImage.height) {
@@ -239,6 +240,12 @@ const onVideoLoad = (event: Event) => {
       }, 100);
     }
   }
+};
+
+const onVideoError = (event: Event) => {
+  const video = event.target as HTMLVideoElement;
+  console.error('Video failed to load:', image.value?.path);
+  console.error('Error details:', video.error);
 };
 
 const onVideoTimeUpdate = (event: Event) => {
@@ -289,7 +296,7 @@ window.addEventListener('keydown', handleKey);
     <div id="image-container" @dragenter="handleDragEnter" @dragover="handleDragOver" @dragleave="handleDragLeave" @drop="handleDrop">
       <div ref='dropIcon' class="bi bi-card-image" style='font-size: 160px' v-if='!image' />
       <img id='image' v-if='image && !image.isVideo()' :src='image.url' @load='onImageLoad' />
-      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop :muted='isMuted' @loadedmetadata='onVideoLoad' @timeupdate='onVideoTimeUpdate' />
+      <video id='video' v-if='image && image.isVideo()' :src='image.url' autoplay loop :muted='isMuted' @loadedmetadata='onVideoLoad' @error='onVideoError' @timeupdate='onVideoTimeUpdate' />
       <div id='caption' v-if='image && image.caption && showCaptions'>{{ image.caption }}</div>
       <div id='video-progress' v-if='image && image.isVideo()'>
         <div id='video-progress-bar' :style="{ width: videoProgress + '%', transition: videoProgress < 5 ? 'none' : getProgressTransition() }"></div>

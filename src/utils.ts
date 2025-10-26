@@ -9,6 +9,12 @@ export function findFilesWithExtensions(pathsOrDirs: string | string[], extensio
   }
 
   for (const pathOrDir of pathsOrDirs) {
+    // Skip macOS resource fork files (._filename)
+    const basename = path.basename(pathOrDir);
+    if (basename.startsWith('._')) {
+      continue;
+    }
+
     const stat = fs.statSync(pathOrDir);
     if (stat.isDirectory()) {
       const files = fs.readdirSync(pathOrDir);
